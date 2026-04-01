@@ -22,6 +22,11 @@ describe('Customers Page', () => {
     });
   }
 
+  function removeFromCleanup(id: number) {
+    const idx = createdIds.indexOf(id);
+    if (idx > -1) createdIds.splice(idx, 1);
+  }
+
   function fillCustomerForm(customer: Partial<typeof testCustomer>) {
     if (customer.firstName) cy.get('[data-testid="first-name"]').type(customer.firstName);
     if (customer.lastName) cy.get('[data-testid="last-name"]').type(customer.lastName);
@@ -270,6 +275,145 @@ describe('Customers Page', () => {
           .click();
         cy.get('[data-testid="confirm-delete-yes"]').click();
         cy.get('[data-cy="table_customers"]').should('not.contain', 'ConfirmDeleteTest');
+      });
+    });
+  });
+
+  describe('Search (advanced)', () => {
+    it('should match case-insensitively', () => {
+      createCustomerViaApi({ firstName: 'CaseTestName' }).then(() => {
+        reloadTable();
+        cy.get('[data-testid="search-input"]').type('casetestname');
+        cy.get('.table-row').should('have.length', 1);
+        cy.get('.table-row').first().should('contain', 'CaseTestName');
+      });
+    });
+
+    it('should match partial strings', () => {
+      createCustomerViaApi({ firstName: 'PartialMatchCustomer' }).then(() => {
+        reloadTable();
+        cy.get('[data-testid="search-input"]').type('PartialMatch');
+        cy.get('.table-row').should('have.length', 1);
+        cy.get('.table-row').first().should('contain', 'PartialMatchCustomer');
+      });
+    });
+
+    it('should filter by zip code', () => {
+      createCustomerViaApi({ zip: '99501', firstName: 'ZipSearchTest' }).then(() => {
+        reloadTable();
+        cy.get('[data-testid="search-input"]').type('99501');
+        cy.get('.table-row').should('have.length', 1);
+        cy.get('.table-row').first().should('contain', 'ZipSearchTest');
+      });
+    });
+
+    it('should filter by state', () => {
+      createCustomerViaApi({ state: 'Alaska', firstName: 'StateSearchTest' }).then(() => {
+        reloadTable();
+        cy.get('[data-testid="search-input"]').type('Alaska');
+        cy.get('.table-row').should('have.length', 1);
+        cy.get('.table-row').first().should('contain', 'StateSearchTest');
+      });
+    });
+  });
+
+  describe('Cancel / No-op Behavior', () => {
+    it('should not create a customer when add modal is closed via X', () => {
+      cy.request('GET', API_URL).then((beforeRes) => {
+        const countBefore = beforeRes.body.length;
+        cy.get('[data-testid="add-customer-button"]').click();
+        fillCustomerForm({ ...testCustomer, firstName: 'ShouldNotExist' });
+        cy.get('.close-button').scrollIntoView().click();
+        cy.get('.modal-header').should('not.exist');
+        cy.request('GET', API_URL).then((afterRes) => {
+          expect(afterRes.body.length).to.eq(countBefore);
+          const found = afterRes.body.find((c: { firstName: string }) => c.firstName === 'ShouldNotExist');
+          expect(found).to.eq(undefined);
+        });
+      });
+    });
+
+    it('should not modify customer when edit modal is closed without saving', () => {
+      createCustomerViaApi({ firstName: 'NoEditSave' }).then((res) => {
+        const id = res.body.id;
+        reloadTable();
+        cy.contains('.table-row', 'NoEditSave')
+          .find('[data-testid^="edit-customer-button-"]')
+          .click();
+        cy.get('.modal-header').should('contain', 'Edit Customer');
+        cy.get('[data-testid="first-name"]').clear().type('ChangedButNotSaved');
+        cy.get('.close-button').scrollIntoView().click();
+        cy.get('.modal-header').should('not.exist');
+        cy.request('GET', `${API_URL}/${id}/details`).then((response) => {
+          expect(response.body.firstName).to.eq('NoEditSave');
+        });
+      });
+    });
+
+    it('should not delete customer when clicking No in confirmation', () => {
+      createCustomerViaApi({ firstName: 'NoDeleteTest' }).then((res) => {
+        const id = res.body.id;
+        reloadTable();
+        cy.contains('.table-row', 'NoDeleteTest')
+          .find('[data-testid^="delete-customer-button-"]')
+          .click();
+        cy.get('[data-testid="confirm-delete-no"]').click();
+        cy.request('GET', `${API_URL}/${id}/details`).then((response) => {
+          expect(response.status).to.eq(200);
+          expect(response.body.firstName).to.eq('NoDeleteTest');
+        });
+      });
+    });
+  });
+
+  describe('Persistence Verification', () => {
+    it('should persist added customer in backend after UI add', () => {
+      cy.get('[data-testid="add-customer-button"]').click();
+      fillCustomerForm({ ...testCustomer, firstName: 'PersistAddTest' });
+      clickSave();
+      cy.get('[data-cy="table_customers"]').should('contain', 'PersistAddTest');
+      cy.request('GET', API_URL).then((res) => {
+        const found = res.body.find((c: { id: number; firstName: string }) => c.firstName === 'PersistAddTest');
+        expect(found).to.not.eq(undefined);
+        expect(found.lastName).to.eq(testCustomer.lastName);
+        createdIds.push(found.id);
+      });
+    });
+
+    it('should persist edited customer in backend after UI edit', () => {
+      createCustomerViaApi({ firstName: 'PersistEditBefore' }).then((res) => {
+        const id = res.body.id;
+        reloadTable();
+        cy.contains('.table-row', 'PersistEditBefore')
+          .find('[data-testid^="edit-customer-button-"]')
+          .click();
+        cy.get('.modal-header').should('contain', 'Edit Customer');
+        cy.get('[data-testid="first-name"]').clear().type('PersistEditAfter');
+        clickSave();
+        cy.get('[data-cy="table_customers"]').should('contain', 'PersistEditAfter');
+        cy.request('GET', `${API_URL}/${id}/details`).then((response) => {
+          expect(response.body.firstName).to.eq('PersistEditAfter');
+        });
+      });
+    });
+
+    it('should persist deleted customer removal in backend after UI delete', () => {
+      createCustomerViaApi({ firstName: 'PersistDeleteTest' }).then((res) => {
+        const id = res.body.id;
+        reloadTable();
+        cy.contains('.table-row', 'PersistDeleteTest')
+          .find('[data-testid^="delete-customer-button-"]')
+          .click();
+        cy.get('[data-testid="confirm-delete-yes"]').click();
+        cy.get('[data-cy="table_customers"]').should('not.contain', 'PersistDeleteTest');
+        cy.request({
+          method: 'GET',
+          url: `${API_URL}/${id}/details`,
+          failOnStatusCode: false,
+        }).then((response) => {
+          expect(response.status).to.eq(404);
+          removeFromCleanup(id);
+        });
       });
     });
   });
