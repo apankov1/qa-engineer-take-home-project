@@ -31,7 +31,7 @@ const CUSTOMER_NOT_FOUND = 'Customer not found';
 const requiredFields = ['firstName', 'lastName', 'email', 'addressLine1', 'city', 'state', 'zip'];
 
 function validateCustomer(body) {
-	const missing = requiredFields.filter(field => !body[field] || body[field].trim() === '');
+	const missing = requiredFields.filter(field => !body[field] || typeof body[field] !== 'string' || body[field].trim() === '');
 	if (missing.length > 0) {
 		return `Missing required fields: ${missing.join(', ')}`;
 	}

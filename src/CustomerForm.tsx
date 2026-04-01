@@ -115,7 +115,7 @@ const CustomerForm = ({ closeModal, editCustomerId }: CustomerFormProps) => {
       } else {
         closeModal();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
     }
   };

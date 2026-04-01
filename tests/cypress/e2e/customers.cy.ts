@@ -157,6 +157,11 @@ describe('Customers Page', () => {
       cy.get('[data-cy="table_customers"]').should('contain', 'AddTest');
       cy.get('[data-cy="table_customers"]').should('contain', testCustomer.lastName);
       cy.get('[data-cy="table_customers"]').should('contain', testCustomer.email);
+      // Track UI-created customer for cleanup
+      cy.request('GET', API_URL).then((res) => {
+        const created = res.body.find((c: { id: number; firstName: string }) => c.firstName === 'AddTest');
+        if (created) createdIds.push(created.id);
+      });
     });
 
     it('should add a customer with only required fields', () => {
@@ -172,6 +177,10 @@ describe('Customers Page', () => {
       });
       clickSave();
       cy.get('[data-cy="table_customers"]').should('contain', 'RequiredOnly');
+      cy.request('GET', API_URL).then((res) => {
+        const created = res.body.find((c: { id: number; firstName: string }) => c.firstName === 'RequiredOnly');
+        if (created) createdIds.push(created.id);
+      });
     });
   });
 

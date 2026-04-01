@@ -52,7 +52,7 @@ function CustomerTable() {
           })
         });
         setLoading(false);
-      } catch (e) {
+      } catch {
         setLoading(false);
       }
     };
