@@ -80,3 +80,32 @@ body, table {
   margin: 20px auto; /* Center table and add vertical margin */
   border: 1px solid #ddd; /* Border around the table */
 }
+
+/* Search input */
+.search-container {
+  margin: 20px 0 0;
+}
+
+.search-input {
+  width: 300px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #0078d7;
+  box-shadow: 0 0 5px rgba(0, 120, 215, 0.5);
+}
+
+/* Confirmation modal buttons */
+.confirm-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+}
