@@ -1,3 +1,16 @@
+interface Customer {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  zip: string;
+  notes: string;
+}
+
 describe('Customers API', () => {
   const API_URL = '/api/customers';
 
@@ -44,8 +57,8 @@ describe('Customers API', () => {
         cy.request('GET', API_URL).then((response) => {
           expect(response.status).to.eq(200);
           expect(response.body).to.be.an('array');
-          const found = response.body.find((c: any) => c.id === createRes.body.id);
-          expect(found).to.not.be.undefined;
+          const found = response.body.find((c: Customer) => c.id === createRes.body.id);
+          expect(found).to.not.eq(undefined);
           expect(found.firstName).to.eq(validCustomer.firstName);
         });
       });
@@ -54,7 +67,7 @@ describe('Customers API', () => {
     it('should return customers with expected fields', () => {
       createCustomer().then((createRes) => {
         cy.request('GET', API_URL).then((response) => {
-          const customer = response.body.find((c: any) => c.id === createRes.body.id);
+          const customer = response.body.find((c: Customer) => c.id === createRes.body.id);
           expect(customer).to.have.property('id');
           expect(customer).to.have.property('firstName');
           expect(customer).to.have.property('lastName');
@@ -86,7 +99,15 @@ describe('Customers API', () => {
     });
 
     it('should default optional fields to empty string when omitted', () => {
-      const { addressLine2, notes, ...requiredOnly } = validCustomer;
+      const requiredOnly = {
+        firstName: validCustomer.firstName,
+        lastName: validCustomer.lastName,
+        email: validCustomer.email,
+        addressLine1: validCustomer.addressLine1,
+        city: validCustomer.city,
+        state: validCustomer.state,
+        zip: validCustomer.zip,
+      };
       createCustomer(requiredOnly as typeof validCustomer).then((response) => {
         expect(response.status).to.eq(201);
         expect(response.body.addressLine2).to.eq('');
@@ -103,6 +124,19 @@ describe('Customers API', () => {
       }).then((response) => {
         expect(response.status).to.eq(400);
         expect(response.body.error).to.include('Missing required fields');
+      });
+    });
+
+    it('should return 400 when required fields are non-string types', () => {
+      cy.request({
+        method: 'POST',
+        url: API_URL,
+        body: { ...validCustomer, firstName: 1, email: true },
+        failOnStatusCode: false,
+      }).then((response) => {
+        expect(response.status).to.eq(400);
+        expect(response.body.error).to.include('firstName');
+        expect(response.body.error).to.include('email');
       });
     });
 
