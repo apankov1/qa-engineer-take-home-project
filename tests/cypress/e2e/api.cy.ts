@@ -140,6 +140,20 @@ describe('Customers API', () => {
       });
     });
 
+    it('should not create a customer on failed validation', () => {
+      cy.request({
+        method: 'POST',
+        url: API_URL,
+        body: { firstName: 'FailedValidationOnly' },
+        failOnStatusCode: false,
+      }).then(() => {
+        cy.request('GET', API_URL).then((res) => {
+          const found = res.body.find((c: Customer) => c.firstName === 'FailedValidationOnly');
+          expect(found).to.eq(undefined);
+        });
+      });
+    });
+
     it('should return 400 when required fields are empty strings', () => {
       cy.request({
         method: 'POST',
@@ -233,6 +247,39 @@ describe('Customers API', () => {
         }).then((response) => {
           expect(response.status).to.eq(400);
           expect(response.body.error).to.include('Missing required fields');
+        });
+      });
+    });
+
+    it('should return 400 when updating with non-string types', () => {
+      createCustomer().then((createResponse) => {
+        const id = createResponse.body.id;
+        cy.request({
+          method: 'PUT',
+          url: `${API_URL}/${id}`,
+          body: { ...validCustomer, firstName: 123, email: false },
+          failOnStatusCode: false,
+        }).then((response) => {
+          expect(response.status).to.eq(400);
+          expect(response.body.error).to.include('firstName');
+          expect(response.body.error).to.include('email');
+        });
+      });
+    });
+
+    it('should not modify customer data on failed validation', () => {
+      createCustomer().then((createResponse) => {
+        const id = createResponse.body.id;
+        cy.request({
+          method: 'PUT',
+          url: `${API_URL}/${id}`,
+          body: { firstName: 'Only' },
+          failOnStatusCode: false,
+        }).then(() => {
+          cy.request('GET', `${API_URL}/${id}/details`).then((response) => {
+            expect(response.body.firstName).to.eq(validCustomer.firstName);
+            expect(response.body.email).to.eq(validCustomer.email);
+          });
         });
       });
     });
