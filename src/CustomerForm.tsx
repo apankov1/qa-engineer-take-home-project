@@ -1,8 +1,7 @@
 import "./CustomerForm.css"
 import { ButtonType } from "./Button";
 import Button from "./Button";
-import { ChangeEvent, useState } from "react";
-import { useCustomerContext } from "./CustomerProvider";
+import { ChangeEvent, useState, useEffect } from "react";
 
 interface CustomerInputField {
  name: string,
@@ -12,25 +11,25 @@ interface CustomerInputField {
 }
 
 const customerInputFields: Array<CustomerInputField> = [
-  { name: "firstName", label: "First Name", dataTestId: "first-name", required: true},
-  { name: "lastName", label: "Last Name", dataTestId: "last-name" , required: true},
-  { name: "email", label: "Email", dataTestId: "email" , required: true},
+  { name: "firstName", label: "First Name", dataTestId: "first-name-input", required: true},
+  { name: "lastName", label: "Last Name", dataTestId: "last-name-input" , required: true},
+  { name: "email", label: "Email", dataTestId: "email-input" , required: true},
   {
     name: "addressLine1",
     label: "Address Line 1",
-    dataTestId: "address-line-1",
+    dataTestId: "address-line-1-input",
     required: true
   },
   {
     name: "addressLine2",
     label: "Address Line 2",
-    dataTestId: "address-line-2",
+    dataTestId: "address-line-2-input",
     required: false
   },
-  { name: "city", label: "City", dataTestId: "city" , required: true},
-  { name: "state", label: "State", dataTestId: "state" , required: true},
-  { name: "zip", label: "Zip", dataTestId: "zip" , required: true},
-  { name: "notes", label: "Notes", dataTestId: "notes", required: false },
+  { name: "city", label: "City", dataTestId: "city-input" , required: true},
+  { name: "state", label: "State", dataTestId: "state-input" , required: true},
+  { name: "zip", label: "Zip", dataTestId: "zip-input" , required: true},
+  { name: "notes", label: "Notes", dataTestId: "notes-input", required: false },
 ];
 
 
@@ -60,141 +59,79 @@ const defaultCustomerData: CustomerData = {
   notes: '',
 }
 
-const CustomerForm = ({closeModal}) => {
-  const {
-    updateCustomerData,
-   } = useCustomerContext();
+interface CustomerFormProps {
+  closeModal: () => void;
+  editCustomerId?: number;
+}
 
-  const [customerData, setCustomerData] = useState<CustomerData>(defaultCustomerData)
-  const [ setResponse] = useState<any>(null);
-  const [reload, setReload] = useState(false);
-  
+const CustomerForm = ({ closeModal, editCustomerId }: CustomerFormProps) => {
+  const [customerData, setCustomerData] = useState<CustomerData>(defaultCustomerData);
+  const [loading, setLoading] = useState(!!editCustomerId);
+
+  useEffect(() => {
+    if (editCustomerId) {
+      const fetchCustomer = async () => {
+        try {
+          const response = await fetch(`/api/customers/${editCustomerId}/details`);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const json = await response.json();
+          setCustomerData({
+            firstName: json.firstName,
+            lastName: json.lastName,
+            email: json.email,
+            addressLine1: json.addressLine1,
+            addressLine2: json.addressLine2 ?? "",
+            city: json.city,
+            state: json.state,
+            zip: json.zip,
+            notes: json.notes ?? "",
+          });
+        } catch (e) {
+          console.error("Failed to fetch customer:", e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchCustomer();
+    }
+  }, [editCustomerId]);
 
   const handleSaveCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(!document.getElementById("customer_id"))
-    // if add
-    {
+    const url = editCustomerId
+      ? `/api/customers/${editCustomerId}`
+      : '/api/customers';
+    const method = editCustomerId ? 'PUT' : 'POST';
     try {
-      const res = await fetch('/api/customers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(customerData),
       });
-
       const data = await res.json();
-      setReload(true);
-      if (!res.ok) {
-        throw new Error(data.message || 'Something went wrong');
+      if (!res.ok) throw new Error(data.message || 'Something went wrong');
+      if (editCustomerId) {
+        window.location.reload();
+      } else {
+        closeModal();
       }
-
-      setResponse(data);
-
-    } catch (err: any) {
-
-    } finally {
-
+    } catch (err) {
+      console.error(err);
     }
-    closeModal();
-  }
-  else {
-    //if update
-      let customerId = document.getElementById("customer_id")?.innerText ?? 0
-      try {
-        const res = await fetch(`/api/customers/${customerId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(customerData),
-        });
-  
-        const data = await res.json();
-        setReload(true);
-        if (!res.ok) {
-          throw new Error(data.message || 'Something went wrong');
-        }
-  
-        setResponse(data);
-  
-      } catch (err: any) {
-  
-      } finally {
-  
-      }
-      window.location.reload();
-  }
-  }
+  };
 
   function handleFieldUpdate(e: ChangeEvent<HTMLInputElement>) {
-    
-    const {name, value} = e.target;
-
-    if(!document.getElementById("customer_id"))
-      {
-        setCustomerData((previousCustomerData: CustomerData) => {
-          const updatedCustomerData: CustomerData = {
-            ...previousCustomerData,
-            [name]: value
-          }
-          return updatedCustomerData;
-        })
-      }
-    else
-    {
-      const firstNameInput = document.getElementsByName('firstName')[0] as HTMLInputElement;
-      const firstName = firstNameInput.value;
-
-      const lastNameInput = document.getElementsByName('lastName')[0] as HTMLInputElement;
-      const lastName = lastNameInput.value;
-
-      const emailInput = document.getElementsByName('email')[0] as HTMLInputElement;
-      const email = emailInput.value;
-
-      const addressline1Input = document.getElementsByName('addressLine1')[0] as HTMLInputElement;
-      const addressLine1 = addressline1Input.value;
-
-      const addressline2Input = document.getElementsByName('addressLine2')[0] as HTMLInputElement;
-      const addressLine2 = addressline2Input.value;
-
-      const cityInput = document.getElementsByName('city')[0] as HTMLInputElement;
-      const city = cityInput.value;
-
-      const state1Input = document.getElementsByName('state')[0] as HTMLInputElement;
-      const state = state1Input.value;
-
-      const zipInput = document.getElementsByName('zip')[0] as HTMLInputElement;
-      const zip = zipInput.value;
-
-      const notesElement = document.getElementsByName('notes')[0] as HTMLInputElement;
-      const notes = notesElement.value;
-
-      let thiscustom: CustomerData = {
-        firstName: firstName,
-        lastName: lastName,
-        email: email,
-        addressLine1: addressLine1,
-        addressLine2: addressLine2 ?? "",
-        city: city,
-        state: state,
-        zip: zip,
-        notes: notes ?? "",
-
-      }
-      setCustomerData(() => {
-        const updatedCustomerData: CustomerData = {
-          ...thiscustom,
-          [name]: value
-        }
-        return updatedCustomerData;
-      })
-    }
+    const { name, value } = e.target;
+    setCustomerData((prev: CustomerData) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
 
+  if (loading) return <p>Loading...</p>;
+
   return (
-      <form onSubmit={(e) => handleSaveCustomer(e)}> 
+      <form onSubmit={(e) => handleSaveCustomer(e)}>
           <div className="form-grid">
             {customerInputFields.map((input) => (
               <div className="form-group" key={input.name}>
@@ -213,8 +150,6 @@ const CustomerForm = ({closeModal}) => {
           </div>
         </form>
   )
-            }
+}
 
 export default CustomerForm;
-
-
