@@ -9,13 +9,13 @@ interface CustomerModalProps {
 
 const CustomerModal: React.FC<CustomerModalProps> = ({ onClose, children, editCustomer }) => {
   return (
-    <div className="modal-container" onClick={onClose}>
+    <div className="modal-container" data-testid="modal-container" onClick={onClose}>
       <div
         className="modal-body"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="close-button" onClick={onClose}>X</div>
-        <div className="modal-header">{editCustomer != null ? "Edit Customer" : "Add Customer"}</div>
+        <div className="close-button" data-testid="close-button" onClick={onClose}>X</div>
+        <div className="modal-header" data-testid="modal-header">{editCustomer != null ? "Edit Customer" : "Add Customer"}</div>
         <div className="modal-content">
           {children}
         </div>

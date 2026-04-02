@@ -11,25 +11,25 @@ interface CustomerInputField {
 }
 
 const customerInputFields: Array<CustomerInputField> = [
-  { name: "firstName", label: "First Name", dataTestId: "first-name", required: true},
-  { name: "lastName", label: "Last Name", dataTestId: "last-name" , required: true},
-  { name: "email", label: "Email", dataTestId: "email" , required: true},
+  { name: "firstName", label: "First Name", dataTestId: "first-name-input", required: true},
+  { name: "lastName", label: "Last Name", dataTestId: "last-name-input" , required: true},
+  { name: "email", label: "Email", dataTestId: "email-input" , required: true},
   {
     name: "addressLine1",
     label: "Address Line 1",
-    dataTestId: "address-line-1",
+    dataTestId: "address-line-1-input",
     required: true
   },
   {
     name: "addressLine2",
     label: "Address Line 2",
-    dataTestId: "address-line-2",
+    dataTestId: "address-line-2-input",
     required: false
   },
-  { name: "city", label: "City", dataTestId: "city" , required: true},
-  { name: "state", label: "State", dataTestId: "state" , required: true},
-  { name: "zip", label: "Zip", dataTestId: "zip" , required: true},
-  { name: "notes", label: "Notes", dataTestId: "notes", required: false },
+  { name: "city", label: "City", dataTestId: "city-input" , required: true},
+  { name: "state", label: "State", dataTestId: "state-input" , required: true},
+  { name: "zip", label: "Zip", dataTestId: "zip-input" , required: true},
+  { name: "notes", label: "Notes", dataTestId: "notes-input", required: false },
 ];
 
 

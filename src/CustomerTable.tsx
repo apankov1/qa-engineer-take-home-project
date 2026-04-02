@@ -87,14 +87,14 @@ function CustomerTable() {
       )}
 
       {deleteCustomerId !== null && (
-        <div className="modal-container" onClick={() => setDeleteCustomerId(null)}>
+        <div className="modal-container" data-testid="modal-container" onClick={() => setDeleteCustomerId(null)}>
           <div className="modal-body" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">Confirm Delete</div>
+            <div className="modal-header" data-testid="modal-header">Confirm Delete</div>
             <div className="modal-content">
               <p>Are you sure you want to delete this customer?</p>
               <div className="confirm-buttons">
-                <Button label="Yes" onClick={confirmDelete} dataTestId="confirm-delete-yes" />
-                <Button label="No" onClick={() => setDeleteCustomerId(null)} dataTestId="confirm-delete-no" />
+                <Button label="Yes" onClick={confirmDelete} dataTestId="confirm-delete-yes-button" />
+                <Button label="No" onClick={() => setDeleteCustomerId(null)} dataTestId="confirm-delete-no-button" />
               </div>
             </div>
           </div>
@@ -112,9 +112,9 @@ function CustomerTable() {
         />
       </div>
 
-      <table className="customer-table" data-cy="table_customers">
+      <table className="customer-table" data-testid="customer-table">
         <thead>
-          <tr className="header-row">
+          <tr className="header-row" data-testid="customer-header-row">
             <th className="header-cell">First Name</th>
             <th className="header-cell">Last Name</th>
             <th className="header-cell">Email</th>
@@ -130,16 +130,16 @@ function CustomerTable() {
         <tbody className="table-body">
         {
         filteredData?.map((customer, index) => (
-          <tr key={index} className="table-row">
-            <td className="table-cell">{customer.firstName}</td>
-            <td className="table-cell">{customer.lastName}</td>
-            <td className="table-cell">{customer.email}</td>
-            <td className="table-cell">{customer.addressLine1}</td>
-            <td className="table-cell">{customer.addressLine2}</td>
-            <td className="table-cell">{customer.city}</td>
-            <td className="table-cell">{customer.state}</td>
-            <td className="table-cell">{customer.zip}</td>
-            <td className="table-cell">{customer.notes}</td>
+          <tr key={index} className="table-row" data-testid={`customer-row-${customer.id}`}>
+            <td className="table-cell" data-testid="customer-first-name-cell">{customer.firstName}</td>
+            <td className="table-cell" data-testid="customer-last-name-cell">{customer.lastName}</td>
+            <td className="table-cell" data-testid="customer-email-cell">{customer.email}</td>
+            <td className="table-cell" data-testid="customer-address-line-1-cell">{customer.addressLine1}</td>
+            <td className="table-cell" data-testid="customer-address-line-2-cell">{customer.addressLine2}</td>
+            <td className="table-cell" data-testid="customer-city-cell">{customer.city}</td>
+            <td className="table-cell" data-testid="customer-state-cell">{customer.state}</td>
+            <td className="table-cell" data-testid="customer-zip-cell">{customer.zip}</td>
+            <td className="table-cell" data-testid="customer-notes-cell">{customer.notes}</td>
             <td className="table-cell">
               <Button label="Edit" onClick={() => setEditModalCustomerId(customer.id ?? null)} dataTestId={`edit-customer-button-${customer.id}`}/>
               <Button label="Delete" onClick={() => { if (customer.id != null) setDeleteCustomerId(customer.id); }} dataTestId={`delete-customer-button-${customer.id}`}/>

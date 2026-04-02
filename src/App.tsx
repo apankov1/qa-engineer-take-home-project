@@ -38,7 +38,7 @@ function App() {
   return (
     <CustomerProvider>
     <div>
-      <h1 data-cy="page_header">Customer Management</h1>
+      <h1 data-testid="page-header">Customer Management</h1>
       {modalOpen && <Modal onClose={handleModalToggle}><CustomerForm closeModal={handleModalToggle}/> </Modal>}
       <CustomerTable/>
       <Button
