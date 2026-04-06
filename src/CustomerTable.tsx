@@ -1,36 +1,32 @@
 import Button from "./Button";
 import { useCustomerContext } from "./CustomerProvider";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import CustomerForm, { CustomerData } from "./CustomerForm";
 import Modal from "./Modal";
 
 function CustomerTable() {
-  const {    customerData  } = useCustomerContext();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalCustomerID, setModalCustomerID] = useState('');
+  const { customerData } = useCustomerContext();
+  const [editModalCustomerId, setEditModalCustomerId] = useState<number | null>(null);
+  const [deleteCustomerId, setDeleteCustomerId] = useState<number | null>(null);
   const [data, setData] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  function handleModalToggle(event: React.MouseEvent<HTMLButtonElement>): void {
+  const closeEditModal = () => {
+    setEditModalCustomerId(null);
+    window.location.reload();
+  };
 
-    const clickedElement = event.currentTarget;
-    let customerId;
-    const buttonId = clickedElement.getAttribute("data-testid")
-    if (buttonId) {
-      customerId = buttonId.split("-")[3];
+  const confirmDelete = async () => {
+    if (deleteCustomerId === null) return;
+    try {
+      await fetch(`/api/customers/${deleteCustomerId}`, { method: 'DELETE' });
+      window.location.reload();
+    } catch (e) {
+      console.error("Failed to delete customer:", e);
     }
-
-    if(customerId && customerId!= "")
-    {      
-      setModalCustomerID(customerId);
-    }
-    
-    setModalOpen((previous) => {
-      console.log("open", previous, !previous);
-      return !modalOpen;
-    });
-  }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,19 +46,29 @@ function CustomerTable() {
             addressLine2: element.addressLine2 ?? "",
             city: element.city,
             state: element.state,
-            zip: element.email,
+            zip: element.zip,
             notes: element.notes ?? "",
             id: element.id
           })
         });
         setLoading(false);
-      } catch (e) {
+      } catch {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []); // The empty dependency array ensures this effect runs only once on mount
+  }, []);
+
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    const term = searchTerm.toLowerCase();
+    return data.filter((customer) =>
+      Object.values(customer).some(
+        (val) => val != null && String(val).toLowerCase().includes(term)
+      )
+    );
+  }, [data, searchTerm]);
 
   if (loading) {
     return <p>Loading...</p>;
@@ -73,12 +79,42 @@ function CustomerTable() {
   }
 
   return (
-
     <div className="table-container">
-            {modalOpen && <Modal onClose={handleModalToggle} editCustomer={modalCustomerID}><CustomerForm closeModal={handleModalToggle}/> </Modal>}
-      <table className="customer-table" data-cy="table_customers">
+      {editModalCustomerId != null && (
+        <Modal onClose={closeEditModal} editCustomer={editModalCustomerId}>
+          <CustomerForm closeModal={closeEditModal} editCustomerId={editModalCustomerId} />
+        </Modal>
+      )}
+
+      {deleteCustomerId !== null && (
+        <div className="modal-container" data-testid="modal-container" onClick={() => setDeleteCustomerId(null)}>
+          <div className="modal-body" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" data-testid="modal-header">Confirm Delete</div>
+            <div className="modal-content">
+              <p>Are you sure you want to delete this customer?</p>
+              <div className="confirm-buttons">
+                <Button label="Yes" onClick={confirmDelete} dataTestId="confirm-delete-yes-button" />
+                <Button label="No" onClick={() => setDeleteCustomerId(null)} dataTestId="confirm-delete-no-button" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Search customers..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          data-testid="search-input"
+          className="search-input"
+        />
+      </div>
+
+      <table className="customer-table" data-testid="customer-table">
         <thead>
-          <tr className="header-row">
+          <tr className="header-row" data-testid="customer-header-row">
             <th className="header-cell">First Name</th>
             <th className="header-cell">Last Name</th>
             <th className="header-cell">Email</th>
@@ -93,18 +129,21 @@ function CustomerTable() {
         </thead>
         <tbody className="table-body">
         {
-        data?.map((customer, index) => (
-          <tr key={index} className="table-row">
-            <td className="table-cell">{customer.firstName}</td>
-            <td className="table-cell">{customer.lastName}</td>
-            <td className="table-cell">{customer.email}</td>
-            <td className="table-cell">{customer.addressLine1}</td>
-            <td className="table-cell">{customer.addressLine2}</td>
-            <td className="table-cell">{customer.city}</td>
-            <td className="table-cell">{customer.state}</td>
-            <td className="table-cell">{customer.zip}</td>
-            <td className="table-cell">{customer.notes}</td>
-            <td className="table-cell"><Button label="Edit" onClick={handleModalToggle} dataTestId={`edit-customer-button-${customer.id}`}/></td>
+        filteredData?.map((customer, index) => (
+          <tr key={index} className="table-row" data-testid={`customer-row-${customer.id}`}>
+            <td className="table-cell" data-testid="customer-first-name-cell">{customer.firstName}</td>
+            <td className="table-cell" data-testid="customer-last-name-cell">{customer.lastName}</td>
+            <td className="table-cell" data-testid="customer-email-cell">{customer.email}</td>
+            <td className="table-cell" data-testid="customer-address-line-1-cell">{customer.addressLine1}</td>
+            <td className="table-cell" data-testid="customer-address-line-2-cell">{customer.addressLine2}</td>
+            <td className="table-cell" data-testid="customer-city-cell">{customer.city}</td>
+            <td className="table-cell" data-testid="customer-state-cell">{customer.state}</td>
+            <td className="table-cell" data-testid="customer-zip-cell">{customer.zip}</td>
+            <td className="table-cell" data-testid="customer-notes-cell">{customer.notes}</td>
+            <td className="table-cell">
+              <Button label="Edit" onClick={() => setEditModalCustomerId(customer.id ?? null)} dataTestId={`edit-customer-button-${customer.id}`}/>
+              <Button label="Delete" onClick={() => { if (customer.id != null) setDeleteCustomerId(customer.id); }} dataTestId={`delete-customer-button-${customer.id}`}/>
+            </td>
           </tr>
         ))}
       </tbody>
