@@ -1,0 +1,22 @@
+{
+  "seed": [
+    {
+      "firstName": "Timmy",
+      "lastName": "O'Tool",
+      "email": "OhDannyBoy@gmail.com",
+      "addressLine1": "15 Main street",
+      "city": "Boston",
+      "state": "Massachusetts",
+      "zip": "02118"
+    },
+    {
+      "firstName": "Tammy",
+      "lastName": "O'Tool",
+      "email": "HotPantsMomma@gmail.com",
+      "addressLine1": "15 Main street",
+      "city": "Boston",
+      "state": "Massachusetts",
+      "zip": "02118"
+    }
+  ]
+}
